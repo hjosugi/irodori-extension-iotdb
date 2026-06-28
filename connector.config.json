@@ -15,7 +15,12 @@
     "wire": "timeSeries",
     "module": "iotdb.driver",
     "features": [
-      "metadata"
+      "metadata",
+      "timeSeries",
+      "timeBuckets",
+      "latestValue",
+      "queryTemplates",
+      "visualization"
     ],
     "connection": {
       "schemaVersion": 1,
@@ -707,5 +712,99 @@
       "iotdb"
     ],
     "customDriverOptions": true
+  },
+  "experience": {
+    "schemaVersion": 1,
+    "domains": [
+      "timeSeries"
+    ],
+    "inspiredBy": [
+      "Apache IoTDB time-series hierarchy",
+      "GROUP BY time",
+      "ALIGN BY DEVICE",
+      "FILL"
+    ],
+    "resultViews": [
+      "timeChart",
+      "table",
+      "heatmap"
+    ],
+    "objectTypes": [
+      "storageGroups",
+      "devices",
+      "measurements",
+      "templates",
+      "ttl"
+    ],
+    "workflows": [
+      {
+        "id": "time-device-query",
+        "label": "Device aligned query",
+        "description": "Compare measurements across devices.",
+        "resultView": "timeChart",
+        "templateIds": [
+          "time-iotdb-group-by-device"
+        ]
+      },
+      {
+        "id": "time-gap-fill",
+        "label": "Gap fill",
+        "description": "Fill sparse telemetry windows for charting.",
+        "resultView": "timeChart",
+        "templateIds": [
+          "time-iotdb-fill"
+        ]
+      },
+      {
+        "id": "time-latest",
+        "label": "Latest telemetry",
+        "description": "Inspect the newest values in a device subtree.",
+        "resultView": "table",
+        "templateIds": [
+          "time-iotdb-latest"
+        ]
+      }
+    ],
+    "queryTemplates": [
+      {
+        "id": "time-iotdb-group-by-device",
+        "label": "GROUP BY time aligned by device",
+        "language": "sql",
+        "description": "Aggregate measurements per device over the last hour.",
+        "insertText": "SELECT avg(temperature)\nFROM root.factory.**\nWHERE time >= now() - 1h\nGROUP BY ([now() - 1h, now()), 1m)\nALIGN BY DEVICE;",
+        "parameters": [],
+        "resultView": "timeChart"
+      },
+      {
+        "id": "time-iotdb-fill",
+        "label": "Fill missing windows",
+        "language": "sql",
+        "description": "Fill sparse time windows for a device path.",
+        "insertText": "SELECT last_value(temperature)\nFROM root.factory.line1.device1\nWHERE time >= now() - 1h\nFILL(previous);",
+        "parameters": [],
+        "resultView": "timeChart"
+      },
+      {
+        "id": "time-iotdb-latest",
+        "label": "Latest values",
+        "language": "sql",
+        "description": "Read recent measurements from a hierarchy.",
+        "insertText": "SELECT last_value(*)\nFROM root.factory.**;",
+        "parameters": [],
+        "resultView": "table"
+      }
+    ],
+    "inspectorHints": [
+      {
+        "id": "time-device-tree",
+        "label": "Device tree",
+        "description": "Keep storage group, device, and measurement hierarchy navigable."
+      },
+      {
+        "id": "time-align-device",
+        "label": "Align by device",
+        "description": "Offer ALIGN BY DEVICE as a visible query option."
+      }
+    ]
   }
 }

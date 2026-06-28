@@ -34,7 +34,12 @@
         "wire": "timeSeries",
         "module": "iotdb.driver",
         "features": [
-          "metadata"
+          "metadata",
+          "timeSeries",
+          "timeBuckets",
+          "latestValue",
+          "queryTemplates",
+          "visualization"
         ],
         "connection": {
           "schemaVersion": 1,
