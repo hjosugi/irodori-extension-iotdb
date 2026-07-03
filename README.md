@@ -1,78 +1,90 @@
 # IoTDB Connector
 
-Adds Apache IoTDB connectivity as an installable connector extension.
+Native Irodori Table connector extension for IoTDB.
 
-This connector is listed in the public Irodori extension marketplace.
+This crate packages the connector metadata, native ABI exports, and driver implementation used by the Irodori extension marketplace.
 
 ## Connector
 
 - Extension ID: `irodori.iotdb`
 - Engine ID: `iotdb`
-- Wire: `timeSeries`
+- Wire protocol: `timeSeries`
 - Default port: `6667`
 - Native ABI: `irodori.connector.native.v1`
-- Driver linked: `true`
+- Driver linked: `yes`
+- Marketplace visibility: `public`
+- Package version: `0.1.1`
 
-No desktop adapter source exists yet; this package starts from the refactored ABI shim and connector metadata.
+The package uses the connector metadata and native driver directly; no desktop adapter source snapshot is required.
 
 Connector metadata lives in `connector.config.json` and `irodori.extension.json`.
-The Rust code keeps native ABI exports in `src/lib.rs`, shared buffer/JSON helpers in `src/abi.rs`, and Apache IoTDB Thrift session behavior in `src/driver.rs`.
+The Rust crate exports the native ABI from `src/lib.rs`, uses `irodori-connector-abi` for shared JSON/buffer helpers, and keeps connector behavior in `src/driver.rs`.
 
 ## Connection Metadata
 
 - Endpoint modes: `hostPort`, `connectionString`
 - Transport modes: `direct`, `sshTunnel`, `socks5Proxy`, `httpConnectProxy`, `proxyChain`
-- TLS supported: `true`
-- Custom driver options: `true`
+- TLS supported: `yes`
+- TLS required by default: `no`
+- Custom driver options: `yes`
 
-| Auth method | Label | Secret purposes |
-|---|---|---|
-| `none` | No authentication | none |
-| `connectionString` | Connection string / DSN | none |
-| `userPassword` | User/password | `password` |
-| `bearerToken` | Bearer token | `token` |
-| `kerberos` | Kerberos / GSSAPI | `token` |
-| `clientCertificate` | Client certificate / mTLS | `privateKey`, `privateKeyPassphrase` |
-| `customDriverOptions` | Custom driver options | `password`, `token`, `privateKey`, `privateKeyPassphrase` |
+### Endpoint Fields
+
+| Field | Label | Type | Required |
+| --- | --- | --- | --- |
+| `host` | Host | `string` | yes |
+| `port` | Port | `number` | no |
+| `database` | Database | `string` | no |
+
+## Authentication
+
+The connector advertises these authentication modes so clients can render the right credential fields. Driver-specific or provider-specific values can still be passed through `options` when needed.
+
+| Auth method | Label | Kind | Secret purposes |
+| --- | --- | --- | --- |
+| `none` | No authentication | `none` | none |
+| `connectionString` | Connection string / DSN | `connectionString` | none |
+| `userPassword` | User/password | `userPassword` | `password` |
+| `bearerToken` | Bearer token | `token` | `token` |
+| `kerberos` | Kerberos / GSSAPI | `kerberos` | `token` |
+| `clientCertificate` | Client certificate / mTLS | `certificate` | `privateKey`, `privateKeyPassphrase` |
+| `customDriverOptions` | Custom driver options | `custom` | `password`, `token`, `privateKey`, `privateKeyPassphrase` |
 
 ## Experience Metadata
 
 - Domains: `timeSeries`
 - Result views: `timeChart`, `table`, `heatmap`
-- Inspired by: `Apache IoTDB time-series hierarchy`, `GROUP BY time`, `ALIGN BY DEVICE`, `FILL`
+- Object types: `storageGroups`, `devices`, `measurements`, `templates`, `ttl`
+- Inspired by: Apache IoTDB time-series hierarchy, GROUP BY time, ALIGN BY DEVICE, FILL
 
 | Workflow | Result view | Templates |
-|---|---|---|
-| Device aligned query | timeChart | time-iotdb-group-by-device |
-| Gap fill | timeChart | time-iotdb-fill |
-| Latest telemetry | table | time-iotdb-latest |
+| --- | --- | --- |
+| Device aligned query | `timeChart` | `time-iotdb-group-by-device` |
+| Gap fill | `timeChart` | `time-iotdb-fill` |
+| Latest telemetry | `table` | `time-iotdb-latest` |
 
 | Template | Label | Language | Result view |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `time-iotdb-group-by-device` | GROUP BY time aligned by device | `sql` | `timeChart` |
 | `time-iotdb-fill` | Fill missing windows | `sql` | `timeChart` |
 | `time-iotdb-latest` | Latest values | `sql` | `table` |
 
-## ABI Calls
-
-The driver handles these JSON requests today:
+## Native ABI Calls
 
 | Method | Response |
-|---|---|
-| `health` / `ping` | Connector health, engine id, ABI version, and driver link status. |
-| `describe` / `capabilities` | Embedded manifest and connector config. |
-| `manifest` | Raw `irodori.extension.json`. |
-| `config` | Raw `connector.config.json`. |
-| `connect` | Opens an Apache IoTDB RPC session. |
-| `query` | Runs SQL through the IoTDB session API and drains result sets. |
-| `metadata` | Reads time-series metadata with `SHOW TIMESERIES`. |
-| `close` | Closes the IoTDB session and removes the cached native connection. |
+| --- | --- |
+| `health` | Returns connector health, engine id, ABI version, and driver status. |
+| `describe` | Returns the embedded manifest and connector config. |
+| `manifest` | Returns raw `irodori.extension.json`. |
+| `config` | Returns raw `connector.config.json`. |
+| `connect` | Opens and validates a native connector connection. |
+| `query` | Runs a connector query and returns structured rows or JSON results. |
+| `metadata` | Reads schemas, tables, columns, indexes, collections, or equivalent metadata. |
+| `close` | Closes and removes a cached native connection. |
 
 ## Development
 
-
-Generated extension repositories share `../target` across sibling repositories so Rust dependencies are compiled once per checkout. DuckDB and MotherDuck are driver-linked by default; set `IRODORI_CONNECTOR_LINK_DUCKDB=0` only when you need metadata-only DuckDB-compatible scaffolds.
-
+All extension crates in this checkout share `../target` so dependencies compile once across sibling repositories.
 
 ```sh
 make check
