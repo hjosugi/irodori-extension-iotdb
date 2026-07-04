@@ -5,8 +5,8 @@ There is no existing desktop adapter source for this connector yet.
 
 
 This directory is a migration staging area for `irodori.iotdb`. The active native
-entrypoints live in `src/lib.rs`, shared ABI helpers live in `src/abi.rs`, and
-engine behavior lives in `src/stub.rs` or `src/driver.rs`. Engine-specific
+entrypoints live in `src/lib.rs`, shared ABI helpers come from
+`irodori-connector-abi`, and engine behavior lives in `src/driver.rs`. Engine-specific
 connect/query/metadata code should move from these snapshots into that behavior
 module as the connector runtime contract is wired into the desktop app.
 
